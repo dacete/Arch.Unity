@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Arch.Unity.Toolkit
 {
@@ -52,6 +53,8 @@ namespace Arch.Unity.Toolkit
             systems.Remove(system);
         }
 
+        static Dictionary<Type, string> names = new();
+
         public void Run()
         {
             var state = new SystemState()
@@ -62,12 +65,21 @@ namespace Arch.Unity.Toolkit
 
             foreach (var system in systems)
             {
+                if (!names.TryGetValue(system.GetType(), out var name))
+                {
+                    name = names[system.GetType()] = system.GetType().FullName;
+                }
+
+                Profiler.BeginSample(name);
+                
                 try { system.BeforeUpdate(state); }
                 catch (Exception ex) { Debug.LogException(ex); }
                 try { system.Update(state); }
                 catch (Exception ex) { Debug.LogException(ex); }
                 try { system.AfterUpdate(state); }
                 catch (Exception ex) { Debug.LogException(ex); }
+
+                Profiler.EndSample();
             }
         }
 
